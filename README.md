@@ -120,9 +120,12 @@ part3: pwners_0xdeadbeef}
 
 
 ### -strstr 
-mình vào IDA để reverse
+
+mình vào IDA để reverse được:
+
 
 ![image](https://hackmd.io/_uploads/HJD-ol3Ua.png)
+
 
 mình thấy buf khai báo 48 byte mà hàm read lại cho nhập đến 0x40(64 byte) nên ở đây có lỗi buffer overflow
 mình thấy đã có sẵn hàm win có chứa shell
