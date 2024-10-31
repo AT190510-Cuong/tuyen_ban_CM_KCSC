@@ -1,0 +1,1 @@
+query=mutation%20changeEmail($input:ChangeEmailInput!){changeEmail(input:$input){email}}&operationName=changeEmail&variables={"input":{"email":"ab@gmail.com"}}
