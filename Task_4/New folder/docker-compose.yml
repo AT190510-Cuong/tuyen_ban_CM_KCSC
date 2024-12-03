@@ -1,0 +1,26 @@
+version: "3"
+
+services:
+    web:
+        build: ./web
+        ports:
+            - "80:80"
+            - "5432"
+        environment:
+            POSTGRES_HOST: "127.0.0.1"
+            POSTGRES_DB: user_db
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: pw_changed_on_remote
+            SECRET_KEY: secret_changed_on_remote
+            JWT_SECRET: secret_changed_on_remote
+        restart: always
+
+    db:
+        image: postgres:13
+        environment:
+            POSTGRES_HOST: "127.0.0.1"
+            POSTGRES_DB: user_db
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: pw_changed_on_remote
+        network_mode: service:web
+        restart: always

@@ -1,0 +1,21 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5 report-container">
+    <div class="text-center">
+        <h2 class="animate__animated animate__fadeIn">Report a Note</h2>
+        <p class="animate__animated animate__fadeIn">
+            If you find any note that violates our terms of service, please
+            report it here.
+        </p>
+    </div>
+    <form id="report-form" method="POST" action="{{ url_for('main.report') }}" class="note-form">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            <label for="note-url-input">Enter Note URL:</label>
+            {{ form.note_url(class="form-control", id="note-url-input") }}
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Submit Report</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+POST /auth/fruitables_login.php HTTP/2
+Host: fruitables-1.ctf.intigriti.io
+Cookie: PHPSESSID=07283fde600a463ab0fe5282cbba5fdf
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 30
+
+username=cuong'&password=cuong

@@ -1,0 +1,10 @@
+Flask[async]
+Flask-WTF
+Flask-SQLAlchemy
+Flask-Login
+Flask-CORS
+gunicorn
+psycopg2-binary
+bleach
+requests
+APScheduler

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SafeNotes - Secure Note Taking</title>
+    <meta name="description"
+        content="SafeNotes is a secure application for taking and sharing notes with robust reporting features." />
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/flash.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/panel.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="{{ url_for('static', filename='js/purify.min.js') }}"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="{{ url_for('main.index') }}" class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Small Logo" class="small-logo" />
+                SafeNotes
+            </a>
+        </div>
+        <div class="navbar-right">
+            <ul>
+                <li><a href="{{ url_for('main.home') }}">Home</a></li>
+                {% if current_user.is_authenticated %}
+                <li>
+                    <a href="{{ url_for('main.create_note') }}">Create Note</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('main.view_note') }}">View Note</a>
+                </li>
+                <li><a href="{{ url_for('main.report') }}">Report</a></li>
+                <li><a href="{{ url_for('main.contact') }}">Contact</a></li>
+                <li><a href="{{ url_for('main.logout') }}">Logout</a></li>
+                {% else %}
+                <li><a href="{{ url_for('main.login') }}">Login</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+    <div class="content-container">
+        <div class="content">{% block content %}{% endblock %}</div>
+    </div>
+    <div class="flash-container">
+        {% with messages = get_flashed_messages(with_categories=true) %} {%
+        if messages %} {% for category, message in messages %}
+        <div class="flash-message {{ category }}">{{ message }}</div>
+        {% endfor %} {% endif %} {% endwith %}
+    </div>
+    {% if not current_user.is_authenticated %}
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 SafeNotes. All rights reserved.</p>
+            <p>
+                <a href="#">Terms & Conditions</a> |
+                <a href="#">Privacy Policy</a>
+            </p>
+        </div>
+    </footer>
+    {% endif %}
+    <script>
+        document
+            .querySelectorAll("form input, form textarea")
+            .forEach((input) => {
+                input.addEventListener("focus", () => {
+                    document.body.classList.add("dimmed");
+                });
+                input.addEventListener("blur", () => {
+                    document.body.classList.remove("dimmed");
+                });
+            });
+
+        function showFlashMessage(message, category) {
+            const flashContainer =
+                document.querySelector(".flash-container");
+            flashContainer.innerHTML = "";
+            const flashMessageDiv = document.createElement("div");
+            flashMessageDiv.className = "flash-message " + category;
+            flashMessageDiv.textContent = message;
+            flashContainer.appendChild(flashMessageDiv);
+            flashMessageDiv.style.display = "block";
+            setTimeout(() => {
+                flashMessageDiv.style.display = "none";
+                flashMessageDiv.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+
+</html>

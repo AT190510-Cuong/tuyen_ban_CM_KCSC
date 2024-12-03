@@ -1,0 +1,19 @@
+{% extends "base.html" %} {% block content %}
+<h2 class="animate__animated animate__fadeInDown">Register</h2>
+<form method="POST" class="animate__animated animate__fadeIn note-form">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        {{ form.username.label }} {{ form.username(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.password.label }} {{ form.password(class="form-control") }}
+    </div>
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Register</button>
+    </div>
+</form>
+<p>
+    Already have an account?
+    <a href="{{ url_for('main.login') }}">Login here</a>
+</p>
+{% endblock %}
