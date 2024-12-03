@@ -1,1 +1,0 @@
-INTIGRITI{fake_flag}
