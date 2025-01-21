@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Process Payload</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/bootstrap.min.css') }}"
+    />
+    <style>
+      body {
+        font-family: "Roboto Mono", monospace;
+        background-color: #fffde7;
+      }
+      .form-container {
+        margin-top: 50px;
+      }
+      .output-container {
+        margin-top: 30px;
+        background-color: #f5f5f5;
+        padding: 20px;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container form-container">
+      <h1 class="text-center">Process Your Pickle!</h1>
+      <form method="post">
+        <div class="mb-3">
+          <label for="payload" class="form-label"
+            >Paste your Pickle payload (Base64 Encoded)</label
+          >
+          <textarea
+            name="payload"
+            id="payload"
+            class="form-control"
+            rows="5"
+            required
+          ></textarea>
+        </div>
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        <button type="submit" class="btn btn-warning w-100">Submit</button>
+      </form>
+
+      {% if disassembled_output %}
+      <div class="output-container">
+        <h3>Disassembled Payload:</h3>
+        <pre>{{ disassembled_output }}</pre>
+      </div>
+      {% endif %}
+    </div>
+  </body>
+</html>

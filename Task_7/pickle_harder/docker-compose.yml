@@ -1,0 +1,9 @@
+services:
+  service:
+    build: .
+    ports:
+      - "3002:5000"
+    environment:
+      - FLASK_ENV=development
+    volumes:
+      - ./flag:/flag
